@@ -21,9 +21,9 @@ from keras.losses import sparse_categorical_crossentropy
 # http://www.manythings.org/anki/ (based on the Tatoeba project)
 
 # Load English data
-english_sentences = helper.load_data('data/small_vocab_en')
+source_texts = helper.load_data('data/small_vocab_en')
 # Load French data
-french_sentences = helper.load_data('data/small_vocab_fr')
+target_texts = helper.load_data('data/small_vocab_fr')
 
 print('Dataset Loaded')
 
@@ -32,30 +32,29 @@ print('Dataset Loaded')
 
 
 for sample_i in range(2):
-    print('small_vocab_en Line {}:  {}'.format(sample_i + 1, english_sentences[sample_i]))
-    print('small_vocab_fr Line {}:  {}'.format(sample_i + 1, french_sentences[sample_i]))
+    print('small_vocab_en Line {}:  {}'.format(sample_i + 1, source_texts[sample_i]))
+    print('small_vocab_fr Line {}:  {}'.format(sample_i + 1, target_texts[sample_i]))
 
 
 # ## Pre-processing
 # 
 # ### Vocabulary
-# The complexity of the problem is determined by the complexity of the vocabulary.  A more complex vocabulary is a more complex problem.  Let's look at the complexity of the dataset we'll be working with.
+# The complexity of the problem is determined by the complexity of the vocabulary.
+# A more complex vocabulary is a more complex problem.  Let's look at the complexity
+# of the dataset we'll be working with.
 
-# In[5]:
+source_word_counter = collections.Counter([word for sentence in source_texts for word in sentence.split()])
+target_word_counter = collections.Counter([word for sentence in target_texts for word in sentence.split()])
 
-
-english_words_counter = collections.Counter([word for sentence in english_sentences for word in sentence.split()])
-french_words_counter = collections.Counter([word for sentence in french_sentences for word in sentence.split()])
-
-print('{} English words.'.format(len([word for sentence in english_sentences for word in sentence.split()])))
-print('{} unique English words.'.format(len(english_words_counter)))
+print('{} English words.'.format(len([word for sentence in source_texts for word in sentence.split()])))
+print('{} unique English words.'.format(len(source_word_counter)))
 print('10 Most common words in the English dataset:')
-print('"' + '" "'.join(list(zip(*english_words_counter.most_common(10)))[0]) + '"')
+print('"' + '" "'.join(list(zip(*source_word_counter.most_common(10)))[0]) + '"')
 print()
-print('{} French words.'.format(len([word for sentence in french_sentences for word in sentence.split()])))
-print('{} unique French words.'.format(len(french_words_counter)))
+print('{} French words.'.format(len([word for sentence in target_texts for word in sentence.split()])))
+print('{} unique French words.'.format(len(target_word_counter)))
 print('10 Most common words in the French dataset:')
-print('"' + '" "'.join(list(zip(*french_words_counter.most_common(10)))[0]) + '"')
+print('"' + '" "'.join(list(zip(*target_word_counter.most_common(10)))[0]) + '"')
 
 
 # ## Preprocess
@@ -87,8 +86,8 @@ text_sentences = [
     'By Jove , my quick study of lexicography won a prize .',
     'This is a short sentence .']
 text_tokenized, text_tokenizer = tokenize(text_sentences)
-print(text_tokenizer.word_index)
-print()
+print(text_tokenizer.word_index, "\n")
+
 for sample_i, (sent, token_sent) in enumerate(zip(text_sentences, text_tokenized)):
     print('Sequence {} in x'.format(sample_i + 1))
     print('  Input:  {}'.format(sent))
@@ -96,11 +95,14 @@ for sample_i, (sent, token_sent) in enumerate(zip(text_sentences, text_tokenized
 
 
 # ### Padding
-# When batching the sequence of word ids together, each sequence needs to be the same length. Since sentences are dynamic in length, we can add padding to the end of the sequences to make them the same length.
+# When batching the sequence of word ids together, each sequence needs to be the
+# same length. Since sentences are dynamic in length, we can add padding to the
+# end of the sequences to make them the same length.
 # 
-# All the English sequences and the French sequences should have the same length; in order to do that we will be padding the **end** of each sequence using Keras's [`pad_sequences`](https://keras.io/preprocessing/sequence/#pad_sequences) function.
+# All the English sequences and the French sequences should have the same length;
+# in order to do that we will be padding the **end** of each sequence using Keras's
+# [`pad_sequences`](https://keras.io/preprocessing/sequence/#pad_sequences) function.
 
-# In[7]:
 
 # Pad Tokenized output
 test_pad = pad_sequences(text_tokenized)
@@ -129,18 +131,18 @@ def preprocess(x, y):
 
     return preprocess_x, preprocess_y, x_tk, y_tk
 
-preproc_english_sentences, preproc_french_sentences, english_tokenizer, french_tokenizer =    preprocess(english_sentences, french_sentences)
+source_sequences, target_sequences, source_tokenizer, target_tokenizer =    preprocess(source_texts, target_texts)
     
-max_english_sequence_length = preproc_english_sentences.shape[1]
-max_french_sequence_length = preproc_french_sentences.shape[1]
-english_vocab_size = len(english_tokenizer.word_index)
-french_vocab_size = len(french_tokenizer.word_index)
+max_source_seq_len = source_sequences.shape[1]
+max_target_seq_len = target_sequences.shape[1]
+source_vocab_size = len(source_tokenizer.word_index)
+target_vocab_size = len(target_tokenizer.word_index)
 
 print('Data Preprocessed')
-print("Max English sentence length:", max_english_sequence_length)
-print("Max French sentence length:", max_french_sequence_length)
-print("English vocabulary size:", english_vocab_size)
-print("French vocabulary size:", french_vocab_size)
+print("Max English sentence length:", max_source_seq_len)
+print("Max French sentence length:", max_target_seq_len)
+print("English vocabulary size:", source_vocab_size)
+print("French vocabulary size:", target_vocab_size)
 
 
 # ## Models
@@ -193,17 +195,17 @@ def embed_model(input_shape, output_sequence_length, english_vocab_size, french_
 #tests.test_embed_model(embed_model)
 
 # Reshape the input
-tmp_x = pad_sequences(preproc_english_sentences, max_french_sequence_length)
+X = pad_sequences(source_sequences, max_target_seq_len)
 # tmp_x = tmp_x.reshape((-1, preproc_french_sentences.shape[-2], 1))
 
 # Train the neural network
 embed_rnn_model = embed_model(
-    tmp_x.shape,
-    max_french_sequence_length,
-    english_vocab_size +2,
-    french_vocab_size + 2)
+    X.shape,
+    max_target_seq_len,
+    source_vocab_size + 2,
+    target_vocab_size + 2)
 
-embed_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=2048, epochs=5,
+embed_rnn_model.fit(X, target_sequences, batch_size=2048, epochs=5,
                     validation_split=0.1, verbose=1)
 
 
@@ -216,10 +218,10 @@ def predict_translation(model, enc_texts, target_tokenizer):
     predicted_logits = model.predict(enc_texts)
     return decode_logits(predicted_logits, target_tokenizer)
 
-sample_txts_enc = embed_rnn_model.predict(tmp_x[:10])
-predicted_texts = predict_translation(embed_rnn_model, tmp_x[:10], french_tokenizer)
+sample_txts_enc = embed_rnn_model.predict(X[:10])
+predicted_texts = predict_translation(embed_rnn_model, X[:10], target_tokenizer)
 
 for i in range(10):
-    print("   src: ", english_sentences[i])
-    print("target: ", french_sentences[i])
+    print("   src: ", source_texts[i])
+    print("target: ", target_texts[i])
     print("  pred: ", predicted_texts[i], "\n")
