@@ -152,23 +152,6 @@ print("French vocabulary size:", french_vocab_size)
 # - Model 4 is a Encoder-Decoder RNN
 # - Model 5 is a Bidirectional RNN with Embedding
 # 
-# ### Ids Back to Text
-# The neural network will be translating the input to words ids, which isn't the final form we want.  We want the French translation.  The function `logits_to_text` will bridge the gab between the logits from the neural network to the French translation.
-
-# In[9]:
-
-
-def logits_to_text(logits, tokenizer):
-    """
-    Turn logits from a neural network into text using the tokenizer
-    :param logits: Logits from a neural network
-    :param tokenizer: Keras Tokenizer fit on the labels
-    :return: String that represents the text of the logits
-    """
-    index_to_words = {id: word for word, id in tokenizer.word_index.items()}
-    index_to_words[0] = '<PAD>'
-
-    return ' '.join([index_to_words[prediction] for prediction in np.argmax(logits, 1)])
 
 print('`logits_to_text` function loaded.')
 
@@ -220,13 +203,23 @@ embed_rnn_model = embed_model(
     english_vocab_size +2,
     french_vocab_size + 2)
 
-embed_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=1024, epochs=5,
-                    validation_split=0.1)
+embed_rnn_model.fit(tmp_x, preproc_french_sentences, batch_size=2048, epochs=5,
+                    validation_split=0.1, verbose=1)
 
+
+def decode_logits(logits, target_tokenizer):
+    pred_classes = np.argmax(logits, axis=2)
+    return target_tokenizer.sequences_to_texts(pred_classes)
+
+
+def predict_translation(model, enc_texts, target_tokenizer):
+    predicted_logits = model.predict(enc_texts)
+    return decode_logits(predicted_logits, target_tokenizer)
+
+sample_txts_enc = embed_rnn_model.predict(tmp_x[:10])
+predicted_texts = predict_translation(embed_rnn_model, tmp_x[:10], french_tokenizer)
 
 for i in range(10):
-    print("src:    ", english_sentences[i])
+    print("   src: ", english_sentences[i])
     print("target: ", french_sentences[i])
-    print("pred:   ",
-          logits_to_text(embed_rnn_model.predict(tmp_x[:10])[i], french_tokenizer),
-          "\n")
+    print("  pred: ", predicted_texts[i], "\n")
