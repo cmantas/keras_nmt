@@ -61,14 +61,87 @@ print('"' + '" "'.join(list(zip(*target_word_counter.most_common(10)))[0]) + '"'
 # We need to convert our textual data into numbers, so that we can feed it into our neural network model. We will be using the following preprocess methods to do that;
 # 1. Tokenize the words into ids
 # 2. Add padding to make all the sequences the same length.
-# 
-# ### Tokenization
-# We can turn each character into a number or each word into a number. These
-# are called character and word ids, respectively. Character ids are used for
-# character level models that generate text predictions for each character.
-# A word level model uses word ids that generate text predictions for each word.
-# Word level models tend to learn better, since they are lower in complexity, so we'll use those.
+#
 
+class NMTModel:
+    # When batching the sequence of word ids together, each sequence needs to be the
+    # same length. Since sentences are dynamic in length, we can add padding to the
+    # end of the sequences to make them the same length.
+    #
+    # All the English sequences and the French sequences should have the same length;
+    # in order to do that we will be padding the **end** of each sequence using Keras's
+    # [`pad_sequences`](https://keras.io/preprocessing/sequence/#pad_sequences) function
+    SOURCE_SEQ_LEN = TARGET_SEQ_LEN = 21
+
+    def __init__(self, source_tokenizer, target_tokenizer):
+        self.source_tokenizer = source_tokenizer
+        self.target_tokenizer = target_tokenizer
+
+        self.source_vocab_size = len(source_tokenizer.word_index)
+        self.target_vocab_size = len(target_tokenizer.word_index)
+
+        self.model = self.model_description()
+
+    @classmethod
+    def create_from_corpora(cls, source_texts, target_texts):
+        source_tokenizer = cls.tokenizer(source_texts)
+        target_tokenizer = cls.tokenizer(target_texts)
+        return cls(source_tokenizer, target_tokenizer)
+
+    @classmethod
+    def vectorize(cls, texts, tokenizer, seq_len):
+        seqs = tokenizer.texts_to_sequences(texts)
+        return pad_sequences(seqs, seq_len)
+
+    def vectorize_sources(self, texts):
+        return self.vectorize(texts, self.source_tokenizer, self.SOURCE_SEQ_LEN)
+
+    def vectorize_targets(self, texts):
+        seqs = self.vectorize(texts, self.target_tokenizer, self.TARGET_SEQ_LEN)
+        # Keras's sparse_categorical_crossentropy function requires the labels to be in 3 dimensions
+        return seqs.reshape(*seqs.shape, 1)
+
+    @classmethod
+    def tokenizer(cls, texts):
+        t = Tokenizer()
+        t.fit_on_texts(texts)
+        return t
+
+    def model_description(self):
+        embedding_dim = 64
+        learning_rate = 1e-3
+
+        input_shape = (self.SOURCE_SEQ_LEN, )
+        input_layer = Input(input_shape)
+        embed_layer = Embedding(self.source_vocab_size+2, embedding_dim,
+                                input_length=self.TARGET_SEQ_LEN)(input_layer)
+        rnn = GRU(64, return_sequences=True)(embed_layer)
+
+        logits = TimeDistributed(
+            Dense(self.target_vocab_size + 2 , activation='softmax')
+        )(rnn)
+
+        model = Model(inputs=input_layer, outputs=logits)
+        model.compile(loss=sparse_categorical_crossentropy,
+                      optimizer=Adam(learning_rate))
+        return model
+
+    def train(self, source_texts, target_texts):
+        X = self.vectorize_sources(source_texts)
+        Y = self.vectorize_targets(target_texts)
+
+        model = self.model_description()
+        model.fit(X, Y, batch_size=2048, epochs=5,
+                        validation_split=0.1, verbose=1)
+
+
+
+
+
+
+model = NMTModel.create_from_corpora(source_texts, target_texts)
+
+model.train(source_texts, target_texts)
 
 def tokenize(x):
     """
