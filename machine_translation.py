@@ -130,11 +130,8 @@ class NMTModel:
         X = self.vectorize_sources(source_texts)
         Y = self.vectorize_targets(target_texts)
 
-        model = self.model_description()
-        model.fit(X, Y, batch_size=2048, epochs=epochs,
-                        validation_split=0.1, verbose=1)
-
-
+        self.model.fit(X, Y, batch_size=2048, epochs=epochs,
+                             validation_split=0.1, verbose=2)
 
 
     def predict(self, input_text):
@@ -291,7 +288,7 @@ embed_rnn_model = embed_model(
     target_vocab_size + 2)
 
 embed_rnn_model.fit(X, target_sequences, batch_size=2048, epochs=5,
-                    validation_split=0.1, verbose=1)
+                    validation_split=0.1, verbose=2)
 
 
 def decode_logits(logits, target_tokenizer):
