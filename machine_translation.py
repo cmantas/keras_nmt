@@ -137,11 +137,23 @@ class NMTModel:
 
 
 
+    def predict(self, input_text):
+        X = self.vectorize_sources(input_text)
+        logits = self.model.predict(X)
+        pred_classes = np.argmax(logits, axis=2)
+        return self.target_tokenizer.sequences_to_texts(pred_classes)
 
 
 model = NMTModel.create_from_corpora(source_texts, target_texts)
 
 model.train(source_texts, target_texts, 5)
+
+pred_texts = model.predict(source_texts[:10])
+
+for i in range(10):
+    print("   src: ", source_texts[i])
+    print("target: ", target_texts[i])
+    print("  pred: ", pred_texts[i], "\n")
 
 def tokenize(x):
     """
