@@ -118,7 +118,7 @@ class NMTModel:
         rnn = GRU(64, return_sequences=True)(embed_layer)
 
         logits = TimeDistributed(
-            Dense(self.target_vocab_size + 2 , activation='softmax')
+            Dense(self.target_vocab_size + 2, activation='softmax')
         )(rnn)
 
         model = Model(inputs=input_layer, outputs=logits)
@@ -126,12 +126,12 @@ class NMTModel:
                       optimizer=Adam(learning_rate))
         return model
 
-    def train(self, source_texts, target_texts):
+    def train(self, source_texts, target_texts, epochs):
         X = self.vectorize_sources(source_texts)
         Y = self.vectorize_targets(target_texts)
 
         model = self.model_description()
-        model.fit(X, Y, batch_size=2048, epochs=5,
+        model.fit(X, Y, batch_size=2048, epochs=epochs,
                         validation_split=0.1, verbose=1)
 
 
@@ -141,7 +141,7 @@ class NMTModel:
 
 model = NMTModel.create_from_corpora(source_texts, target_texts)
 
-model.train(source_texts, target_texts)
+model.train(source_texts, target_texts, 5)
 
 def tokenize(x):
     """
