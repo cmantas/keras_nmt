@@ -9,11 +9,12 @@ import numpy as np
 
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.layers import LSTM, GRU, Input, Dense, TimeDistributed, Activation, RepeatVector, Bidirectional
 from keras.layers.embeddings import Embedding
 from keras.optimizers import Adam
 from keras.losses import sparse_categorical_crossentropy
+import pickle
 
 # As a toy dataset we will use french-english parallel corpus, created by Udacity.
 # see here: https://www.floydhub.com/udacity/datasets/language-translation-en-fr.
@@ -139,6 +140,15 @@ class NMTModel:
         logits = self.model.predict(X)
         pred_classes = np.argmax(logits, axis=2)
         return self.target_tokenizer.sequences_to_texts(pred_classes)
+
+    @classmethod
+    def load_model(cls, dir_path):
+        src_tok = pickle.load(open(dir_path + '/source_tokenizer.pickle', 'rb'))
+        trgt_tok = pickle.load(open(dir_path + '/target_tokenizer.pickle', 'rb'))
+        model = load_model(dir_path + '/model.h5')
+        rv = cls(src_tok, trgt_tok)
+        rv.model = model
+        return rv
 
 
 model = NMTModel.create_from_corpora(source_texts, target_texts)
