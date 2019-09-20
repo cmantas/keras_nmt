@@ -15,6 +15,8 @@ from keras.layers.embeddings import Embedding
 from keras.optimizers import Adam
 from keras.losses import sparse_categorical_crossentropy
 import pickle
+from nltk.translate.bleu_score import corpus_bleu
+
 
 # As a toy dataset we will use french-english parallel corpus, created by Udacity.
 # see here: https://www.floydhub.com/udacity/datasets/language-translation-en-fr.
@@ -149,6 +151,25 @@ class NMTModel:
         rv = cls(src_tok, trgt_tok)
         rv.model = model
         return rv
+
+
+
+def bleu_n_gram(model, source_texts, target_texts, n):
+    def splitter(corpus):
+        return list(map(lambda t: t.split(), corpus))
+
+    source_text_words = splitter(source_texts)
+    target_text_words = splitter(target_texts)
+    predicted_texts = model.predict(source_texts)
+    predicted_texts_words = splitter(predicted_texts)
+
+    bleu_weights = [0] * 3
+    bleu_weights[n-1] = 1.
+    return corpus_bleu(list(zip(source_text_words, target_text_words)),
+                       predicted_texts_words, bleu_weights)
+
+
+
 
 
 model = NMTModel.create_from_corpora(source_texts, target_texts)
