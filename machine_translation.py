@@ -136,6 +136,15 @@ class NMTModel:
         self.model.fit(X, Y, batch_size=2048, epochs=epochs,
                              validation_split=0.1, verbose=2)
 
+        train_source_txts = source_texts[:100]
+        train_trgt_txts = target_texts[:100]
+
+        metrics =  {
+        'train_bleu_1': bleu_n_gram(self, train_source_txts, train_trgt_txts, 1),
+        'train_bleu_2': bleu_n_gram(self, train_source_txts, train_trgt_txts, 2),
+        }
+        return metrics
+
 
     def predict(self, input_text):
         X = self.vectorize_sources(input_text)
@@ -174,7 +183,7 @@ def bleu_n_gram(model, source_texts, target_texts, n):
 
 model = NMTModel.create_from_corpora(source_texts, target_texts)
 
-model.train(source_texts, target_texts, 5)
+model.train(source_texts, target_texts, 1)
 
 pred_texts = model.predict(source_texts[:10])
 
