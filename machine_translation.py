@@ -6,14 +6,15 @@ import collections
 import helper
 import numpy as np
 #import project_tests as tests
+import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import LSTM, GRU, Input, Dense, TimeDistributed, Activation, RepeatVector, Bidirectional
 
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from keras.models import Model, load_model
-from keras.layers import LSTM, GRU, Input, Dense, TimeDistributed, Activation, RepeatVector, Bidirectional
-from keras.layers.embeddings import Embedding
-from keras.optimizers import Adam
-from keras.losses import sparse_categorical_crossentropy
+from tensorflow.keras.layers import Embedding
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import sparse_categorical_crossentropy
 import pickle
 from nltk.translate.bleu_score import corpus_bleu
 
@@ -40,7 +41,7 @@ for sample_i in range(2):
 
 
 # ## Pre-processing
-# 
+#
 # ### Vocabulary
 # The complexity of the problem is determined by the complexity of the vocabulary.
 # A more complex vocabulary is a more complex problem.  Let's look at the complexity
@@ -139,7 +140,7 @@ class NMTModel:
         train_source_txts = source_texts[:100]
         train_trgt_txts = target_texts[:100]
 
-        metrics =  {
+        metrics = {
         'train_bleu_1': bleu_n_gram(self, train_source_txts, train_trgt_txts, 1),
         'train_bleu_2': bleu_n_gram(self, train_source_txts, train_trgt_txts, 2),
         }
