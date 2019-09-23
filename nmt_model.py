@@ -55,17 +55,16 @@ class NMTModel:
         embedding_dim = 64
         learning_rate = 1e-3
 
-        input_shape = (self.SOURCE_SEQ_LEN, )
-        input_layer = Input(input_shape)
-        embed_layer = Embedding(self.source_vocab_size+2, embedding_dim,
-                                input_length=self.TARGET_SEQ_LEN)(input_layer)
-        rnn = GRU(64, return_sequences=True)(embed_layer)
+        layers = [
+            Embedding(self.source_vocab_size + 2, embedding_dim,
+                      input_length=self.TARGET_SEQ_LEN),
+            GRU(64, return_sequences=True),
+            TimeDistributed(
+                Dense(self.target_vocab_size + 2, activation='softmax')
+            )
+        ]
 
-        logits = TimeDistributed(
-            Dense(self.target_vocab_size + 2, activation='softmax')
-        )(rnn)
-
-        model = Model(inputs=input_layer, outputs=logits)
+        model = Sequential(layers)
         model.compile(loss=sparse_categorical_crossentropy,
                       optimizer=Adam(learning_rate))
         return model
