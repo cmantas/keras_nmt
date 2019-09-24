@@ -39,9 +39,10 @@ print('10 Most common words in the French dataset:')
 print('"' + '" "'.join(list(zip(*target_word_counter.most_common(10)))[0]) + '"')
 
 
-model = NMTModel.create_from_corpora(source_texts, target_texts)
+#model = NMTModel.create_from_corpora(source_texts, target_texts)
+model = NMTEncoderDecoderModel.create_from_corpora(source_texts, target_texts)
 
-model.train(source_texts, target_texts, 1)
+model.train(source_texts, target_texts, 4)
 
 pred_texts = model.predict(source_texts[:10])
 

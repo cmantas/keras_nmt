@@ -5,7 +5,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import GRU, Input, Dense, TimeDistributed
 from tensorflow.keras.layers import Embedding
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import sparse_categorical_crossentropy
 
 import numpy as np
 import pickle
@@ -65,7 +64,7 @@ class NMTModel:
         ]
 
         model = Sequential(layers)
-        model.compile(loss=sparse_categorical_crossentropy,
+        model.compile(loss='sparse_categorical_crossentropy',
                       optimizer=Adam(learning_rate))
         return model
 
